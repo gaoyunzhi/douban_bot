@@ -12,7 +12,6 @@ class DBItem(object):
 	def __init__(self, name):
 		self.items = getFile(name)
 		self.fn = 'db/' + name
-		print(self.items)
 
 	def add(self, x):
 		x = str(x).strip()

@@ -30,7 +30,7 @@ def process(note, channels):
 		channel.send_message(note)
 
 def getNotes(user_id, page=1):
-	url = 'https://www.douban.com/people/%s/notes?p=%d' % (user_id, page)
+	url = 'https://www.douban.com/people/%s/notes?start=%d' % (user_id, page * 10 - 10)
 	soup = BeautifulSoup(cached_url.get(url, sleep=20), 'html.parser')
 	for item in soup.find_all('div', class_="note-container"):
 		yield item['data-url']
