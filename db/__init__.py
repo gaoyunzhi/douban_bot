@@ -1,9 +1,6 @@
 import os
 import yaml
-import threading
-import time
 from telegram_util import commitRepo
-import uuid
 
 def getFile(name):
 	fn = 'db/' + name
@@ -25,9 +22,10 @@ class DBItem(object):
 			f.write('\n' + x)
 		return True
 
-	def contains(self, x):
-		x = str(x).strip()
-		return x in self.items
+def normalizeUser(text):
+	if not text:
+		return
+	return text.strip('/').split('/')[-1]
 
 class Subscription(object):
 	def __init__(self):
@@ -35,26 +33,27 @@ class Subscription(object):
 			self.sub = yaml.load(f, Loader=yaml.FullLoader)
 
 	def add(self, chat_id, text):
+		text = normalizeUser(text)
 		if not text:
 			return
-		try:
-			user_id = text.strip('/').split('/')[-1]
-			int(user_id)
-			text = user_id
-		except:
-			...
 		self.sub[chat_id] = self.sub.get(chat_id, []) + [text]
 		self.save()
 
 	def remove(self, chat_id, text):
+		text = normalizeUser(text)
+		if not text:
+			return
 		self.sub[chat_id] = self.sub.get(chat_id, [])
 		try:
 			self.sub[chat_id].remove(text)
 		except:
 			...
+		self.save()
 
 	def get(self, chat_id):
-		return '当前订阅：' + ' '.join(self.sub.get(chat_id, []))
+		return 'subscriptions: ' + ' '.join([
+			'[%s](%s)' % (user_id, 'https://www.douban.com/people/' + user_id)
+			for user_id in self.sub.get(chat_id, [])])
 
 	def subscriptions(self):
 		result = set()
@@ -63,24 +62,9 @@ class Subscription(object):
 				result.add(item)
 		return result
 
-	def keywords(self):
-		for item in self.subscriptions():
-			try:
-				int(item)
-			except:
-				yield item
-
-	def users(self):
-		for item in self.subscriptions():
-			try:
-				int(item)
-				yield item
-			except:
-				...
-
-	def channels(self, bot, text):
+	def channels(self, user_id, bot):
 		for chat_id in self.sub:
-			if text in self.sub.get(chat_id, []):
+			if user_id in self.sub.get(chat_id, []):
 				try:
 					yield bot.get_chat(chat_id)
 				except:
@@ -90,21 +74,6 @@ class Subscription(object):
 		with open('db/subscription', 'w') as f:
 			f.write(yaml.dump(self.sub, sort_keys=True, indent=2, allow_unicode=True))
 		commitRepo(delay_minute=0)
-
-class Existing(object):
-	def __init__(self):
-		current_fn = 'existing_' + str(uuid.getnode())
-		self.current = DBItem(current_fn)
-		self.all = []
-		for fn in os.listdir('db'):
-			if fn.startswith('existing') and fn != current_fn:
-				self.all.append(DBItem(fn))
-
-	def add(self, item):
-		for dbitem in self.all:
-			if dbitem.contains(item):
-				return False
-		return self.current.add(item)
 
 class DB(object):
 	def __init__(self):
