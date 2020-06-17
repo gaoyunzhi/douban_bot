@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from telegram_util import removeOldFiles, matchKey, cutCaption, clearUrl, splitCommand, autoDestroy, log_on_fail, compactText
-import sys
-import os
+from telegram_util import removeOldFiles, matchKey, cutCaption, clearUrl, splitCommand, log_on_fail, compactText
 from telegram.ext import Updater, MessageHandler, Filters
 import export_to_telegraph
 import time
@@ -73,7 +71,7 @@ def process(item, channels):
 	try:
 		post_link = item.find('span', class_='created_at').find('a')['href']
 	except:
-		pass
+		return
 	source = getSource(item) or post_link
 
 	if db.existing.add(source) or db.existing.add(post_link):
