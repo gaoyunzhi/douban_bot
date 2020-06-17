@@ -60,10 +60,8 @@ def loopImp():
 	removeOldFiles('tmp', day=0.1)
 	for user_id in db.sub.subscriptions():
 		channels = db.sub.channels(user_id, tele.bot)
-		print('here')
-		for status in getStatus(user_id):
-			print(status)
-			processStatus(status, channels)
+		for note in getNotes(user_id):
+			processNote(note, channels)
 
 def backfill(chat_id):
 	channels = [tele.bot.get_chat(chat_id)]
