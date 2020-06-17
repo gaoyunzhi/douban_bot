@@ -20,11 +20,13 @@ debug_group = tele.bot.get_chat(420074357)
 
 db = DB()
 
+@log_on_fail(debug_group)
 def process(note, channels):
-	if db.existing.add(note):
+	if not db.existing.add(note):
 		return
 	note = export_to_telegraph.export(note, force=True) or note
 	for channel in channels:
+		time.sleep(5)
 		channel.send_message(note)
 
 def getNotes(user_id, page=1):
@@ -37,8 +39,8 @@ def getNotes(user_id, page=1):
 def loopImp():
 	removeOldFiles('tmp', day=0.1)
 	for user_id in db.sub.subscriptions():
-		channels = db.sub.channels(user_id)
-		for note in getNotes(user_id)
+		channels = db.sub.channels(user_id, tele.bot)
+		for note in getNotes(user_id):
 			process(note, channels)
 
 def backfill(chat_id):
@@ -51,7 +53,7 @@ def backfill(chat_id):
 			if not notes:
 				return
 			for note in notes:
-				process(item, channels)
+				process(note, channels)
 	tele.bot.get_chat(chat_id).send_message('finished backfill')
 
 def doubanLoop():
