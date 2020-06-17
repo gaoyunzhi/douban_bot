@@ -8,7 +8,7 @@ import time
 import yaml
 import web_2_album
 import album_sender
-import BeautifulSoup
+from bs4 import BeautifulSoup
 import cached_url
 from db import DB
 import threading
