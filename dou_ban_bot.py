@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 import cached_url
 from db import DB
 import threading
+import web_2_album
+import album_sender
 
 with open('credential') as f:
 	credential = yaml.load(f, Loader=yaml.FullLoader)
@@ -21,13 +23,31 @@ debug_group = tele.bot.get_chat(420074357)
 db = DB()
 
 @log_on_fail(debug_group)
-def process(note, channels):
+def processNote(note, channels):
 	if not db.existing.add(note):
 		return
 	note = export_to_telegraph.export(note, force=True) or note
 	for channel in channels:
 		time.sleep(5)
 		channel.send_message(note)
+
+@log_on_fail(debug_group)
+def processStatus(url, channels):
+	if not db.existing.add(note):
+		return
+	result = web_2_album.get(url)
+	for channel in channels:
+		time.sleep(5)
+		album_sender.send_v2(channel, result)
+
+def getStatus(user_id):
+	url = 'https://www.douban.com/people/%s' % user_id
+	soup = BeautifulSoup(cached_url.get(url, sleep=20), 'html.parser')
+	for item in soup.find('span', class_='created_at'):
+		sub_item = item.find('a')
+		if not sub_item:
+			continue
+		yield sub_item['href']
 
 def getNotes(user_id, page=1):
 	url = 'https://www.douban.com/people/%s/notes?start=%d' % (user_id, page * 10 - 10)
@@ -40,8 +60,8 @@ def loopImp():
 	removeOldFiles('tmp', day=0.1)
 	for user_id in db.sub.subscriptions():
 		channels = db.sub.channels(user_id, tele.bot)
-		for note in getNotes(user_id):
-			process(note, channels)
+		for status in getStatus(user_id):
+			processStatus(status, channels)
 
 def backfill(chat_id):
 	channels = [tele.bot.get_chat(chat_id)]
@@ -53,7 +73,7 @@ def backfill(chat_id):
 			if not notes:
 				return
 			for note in notes:
-				process(note, channels)
+				processNote(note, channels)
 	tele.bot.get_chat(chat_id).send_message('finished backfill')
 
 def doubanLoop():
@@ -76,13 +96,11 @@ def handleCommand(update, context):
 		parse_mode='markdown', disable_web_page_preview=True)
 
 HELP_MESSAGE = '''
-** Currently support notes only **
-
 Commands:
 /dbb_add - add douban user
 /dbb_remove - remove douban user
 /dbb_view - view subscription
-/dbb_backfill - backfill 
+/dbb_backfill - backfill (currently notes only)
 
 Can be used in group/channel also.
 
