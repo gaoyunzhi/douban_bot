@@ -222,13 +222,43 @@ def command(update, context):
 	autoDestroy(msg.reply_text(r), 0.1)
 	msg.delete()
 
-if 'once' not in sys.argv:
-	threading.Timer(1, loop).start()
-	tele.dispatcher.add_handler(MessageHandler(
-		Filters.text & Filters.private, private))
-	tele.dispatcher.add_handler(MessageHandler(
-		Filters.update.channel_post & Filters.command, command))
+@log_on_fail(debug_group)
+def handleCommand(update, context):
+	msg = update.effective_message
+	if not msg or not msg.text.startswith('/dbb'):
+		return
+	command, text = splitCommand(msg.text)
+	if 'remove' in command:
+		db.sub.remove(msg.chat_id, text)
+	elif 'add' in command:
+		db.sub.add(msg.chat_id, text)
+	msg.reply_text(db.sub.get(msg.chat_id), 
+		parse_mode='markdown', disable_web_page_preview=True)
+
+HELP_MESSAGE = '''
+Commands:
+/dbb_add - add douban user
+/dbb_remove - remove douban user
+/dbb_view - view subscription
+/dbb_backfill - backfill 
+
+Can be used in group/channel also.
+
+Github： https://github.com/gaoyunzhi/douban_bot
+'''
+
+def handleHelp(update, context):
+	update.message.reply_text(HELP_MESSAGE)
+
+def handleStart(update, context):
+	if 'start' in update.message.text:
+		update.message.reply_text(HELP_MESSAGE)
+
+if __name__ == '__main__':
+	threading.Timer(10 * 60, doubanLoop).start() 
+	dp = tele.dispatcher
+	dp.add_handler(MessageHandler(Filters.command, handleCommand))
+	dp.add_handler(MessageHandler(Filters.private & (~Filters.command), handleHelp))
+	dp.add_handler(MessageHandler(Filters.private & Filters.command, handleStart), group=2)
 	tele.start_polling()
 	tele.idle()
-else:
-	loopImp()
