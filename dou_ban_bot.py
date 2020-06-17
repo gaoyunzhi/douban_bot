@@ -96,11 +96,13 @@ def handleCommand(update, context):
 		parse_mode='markdown', disable_web_page_preview=True)
 
 HELP_MESSAGE = '''
+**Support notes only**
+
 Commands:
 /dbb_add - add douban user
 /dbb_remove - remove douban user
 /dbb_view - view subscription
-/dbb_backfill - backfill (currently notes only)
+/dbb_backfill - backfill
 
 Can be used in group/channel also.
 
