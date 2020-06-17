@@ -43,7 +43,7 @@ def processStatus(url, channels):
 def getStatus(user_id):
 	url = 'https://www.douban.com/people/%s' % user_id
 	soup = BeautifulSoup(cached_url.get(url, sleep=20), 'html.parser')
-	for item in soup.find('span', class_='created_at'):
+	for item in soup.find_all('span', class_='created_at'):
 		sub_item = item.find('a')
 		if not sub_item:
 			continue
