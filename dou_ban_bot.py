@@ -59,7 +59,7 @@ def getNotes(user_id, page=1):
 def loopImp():
 	removeOldFiles('tmp', day=0.1)
 	for user_id in db.sub.subscriptions():
-		channels = db.sub.channels(user_id, tele.bot)
+		channels = list(db.sub.channels(user_id, tele.bot))
 		for note in getNotes(user_id):
 			processNote(note, channels)
 
